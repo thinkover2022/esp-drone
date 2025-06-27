@@ -307,7 +307,7 @@ void processBarometerMeasurements(const uint8_t *buffer)
 {
     float pressure, temperature, asl;
     // MS5611의 통합 데이터 읽기 함수 사용 (최적화됨)
-    ms5611GetData(&pressure, &temperature, ?&asl);
+    ms5611GetData(&pressure, &temperature, &asl);
     // sensorData 구조체에 값 설정
     sensorData.baro.pressure = pressure;        // mbar 단위
     sensorData.baro.temperature = temperature;  // 섭씨 단위
