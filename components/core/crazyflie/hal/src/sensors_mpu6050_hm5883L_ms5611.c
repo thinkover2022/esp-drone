@@ -80,7 +80,7 @@
  * Enable sensors on board 
  */
 // #define SENSORS_ENABLE_MAG_HM5883L
-// #define SENSORS_ENABLE_PRESSURE_MS5611
+#define SENSORS_ENABLE_PRESSURE_MS5611
 //#define SENSORS_ENABLE_RANGE_VL53L0X
 #define SENSORS_ENABLE_RANGE_VL53L1X
 #define SENSORS_ENABLE_FLOW_PMW3901
@@ -305,18 +305,13 @@ void sensorsMpu6050Hmc5883lMs5611WaitDataReady(void)
 
 void processBarometerMeasurements(const uint8_t *buffer)
 {
-    //TODO: replace it to MS5611
-    DEBUG_PRINTW("processBarometerMeasurements NEED TODO");
-//   static uint32_t rawPressure = 0;
-//   static int16_t rawTemp = 0;
-
-// Check if there is a new pressure update
-
-// Check if there is a new temp update
-
-//   sensorData.baro.pressure = (float) rawPressure / LPS25H_LSB_PER_MBAR;
-//   sensorData.baro.temperature = LPS25H_TEMP_OFFSET + ((float) rawTemp / LPS25H_LSB_PER_CELSIUS);
-//   sensorData.baro.asl = lps25hPressureToAltitude(&sensorData.baro.pressure);
+    float pressure, temperature, asl;
+    // MS5611의 통합 데이터 읽기 함수 사용 (최적화됨)
+    ms5611GetData(&pressure, &temperature, ?&asl);
+    // sensorData 구조체에 값 설정
+    sensorData.baro.pressure = pressure;        // mbar 단위
+    sensorData.baro.temperature = temperature;  // 섭씨 단위
+    sensorData.baro.asl = asl;                 // 해수면 기준 고도 (m)
 }
 
 void processMagnetometerMeasurements(const uint8_t *buffer)
@@ -484,7 +479,7 @@ static void sensorsDeviceInit(void)
 #ifdef SENSORS_ENABLE_PRESSURE_MS5611
     ms5611Init(I2C0_DEV);
 
-    if (false) {
+    if (ms5611SelfTest()) {
         isBarometerPresent = true;
         DEBUG_PRINTI("MS5611 I2C connection [OK].\n");
     } else {
