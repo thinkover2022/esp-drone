@@ -158,6 +158,14 @@ static void udp_server_rx_task(void *pvParameters)
                 memcpy(inPacket.data, rx_buffer, inPacket.size);
                 xQueueSend(udpDataRx, &inPacket, M2T(10));
                 if(!isUDPConnected) isUDPConnected = true;
+                
+                // Log UDP packet reception
+                DEBUG_PRINT_LOCAL("UDP RX: Size=%d, Cksum=%02X, Data=", inPacket.size, cksum);
+                for (int i = 0; i < inPacket.size && i < 16; i++) {
+                    printf("%02X ", inPacket.data[i]);
+                }
+                if (inPacket.size > 16) printf("...");
+                printf("\n");
             }else{
                 DEBUG_PRINT_LOCAL("udp packet cksum unmatched");
             }
@@ -186,6 +194,14 @@ static void udp_server_tx_task(void *pvParameters)
             outPacket.data[outPacket.size] = calculate_cksum(outPacket.data, outPacket.size);
             outPacket.size += 1;
 
+            // Log UDP packet transmission
+            DEBUG_PRINT_LOCAL("UDP TX: Size=%d, Cksum=%02X, Data=", outPacket.size, outPacket.data[outPacket.size - 1]);
+            for (int i = 0; i < outPacket.size - 1 && i < 16; i++) {
+                printf("%02X ", outPacket.data[i]);
+            }
+            if (outPacket.size - 1 > 16) printf("...");
+            printf("\n");
+            
             int err = sendto(sock, outPacket.data, outPacket.size, 0, (struct sockaddr *)&source_addr, sizeof(source_addr));
             if (err < 0) {
                 DEBUG_PRINT_LOCAL("Error occurred during sending: errno %d", errno);
@@ -298,6 +314,7 @@ void wifiInit(void)
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(34));
     esp_wifi_set_channel(WIFI_CH, WIFI_SECOND_CHAN_NONE);
     espnow_config_t espnow_config = ESPNOW_INIT_CONFIG_DEFAULT();
     espnow_init(&espnow_config);

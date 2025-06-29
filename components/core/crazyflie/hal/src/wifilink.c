@@ -32,6 +32,7 @@
 #include "wifilink.h"
 #include "wifi_esp32.h"
 #include "crtp.h"
+#include "esp_log.h"
 #include "configblock.h"
 #include "ledseq.h"
 #include "pm_esplane.h"
@@ -149,6 +150,15 @@ static void wifilinkTask(void *param)
 
         /* command step - receive 05 send to crtpPacketDelivery queue */
         xQueueSend(crtpPacketDelivery, &p, M2T(sendWaitMs));
+        
+        // Log CRTP packet reception
+        DEBUG_PRINT_LOCAL("CRTP RX: Port=%d, Ch=%d, Size=%d, Data=", 
+                         p.port, p.channel, p.size);
+        for (int i = 0; i < p.size && i < 16; i++) {
+            printf("%02X ", p.data[i]);
+        }
+        if (p.size > 16) printf("...");
+        printf("\n");
     }
 
 }
@@ -167,6 +177,16 @@ static int wifilinkSendPacket(CRTPPacket *p)
 {
     ASSERT(p->size <= CRTP_MAX_DATA_SIZE);
     ledseqRun(&seq_linkDown);
+    
+    // Log CRTP packet transmission
+    DEBUG_PRINT_LOCAL("CRTP TX: Port=%d, Ch=%d, Size=%d, Data=", 
+                     p->port, p->channel, p->size);
+    for (int i = 0; i < p->size && i < 16; i++) {
+        printf("%02X ", p->data[i]);
+    }
+    if (p->size > 16) printf("...");
+    printf("\n");
+    
     return wifiSendData(p->size + 1, p->raw);
 }
 
@@ -184,6 +204,9 @@ void wifilinkInit()
     if (isInit) {
         return;
     }
+
+    // Set WIFILINK module log level to VERBOSE
+    esp_log_level_set("WIFILINK", ESP_LOG_VERBOSE);
 
     crtpPacketDelivery = STATIC_MEM_QUEUE_CREATE(crtpPacketDelivery);
     DEBUG_QUEUE_MONITOR_REGISTER(crtpPacketDelivery);
